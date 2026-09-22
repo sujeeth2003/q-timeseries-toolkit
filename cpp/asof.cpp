@@ -12,3 +12,20 @@
 #include <cstdlib>
 #include <vector>
 
+using clk = std::chrono::steady_clock;
+static double ms_since(clk::time_point t) { return std::chrono::duration<double, std::milli>(clk::now() - t).count(); }
+
+struct Rng { uint64_t s; uint64_t next() { s ^= s << 13; s ^= s >> 7; s ^= s << 17; return s; } };
+
+int main(int argc, char** argv) {
+  size_t nt = argc > 1 ? std::strtoull(argv[1], 0, 10) : 2000000, nq = argc > 2 ? std::strtoull(argv[2], 0, 10) : 4000000;
+  uint32_t ns = argc > 3 ? (uint32_t)std::atoi(argv[3]) : 500;
+  Rng r{88172645463325252ull};
+
+  // both streams are time-sorted (as in a real tick database), interleaved in time
+  struct Ev { int64_t t; uint32_t sym; double v; };
+  std::vector<Ev> q(nq), tr(nt);
+  int64_t t = 0; for (auto& e : q) { t += 1 + r.next() % 5; e = {t, (uint32_t)(r.next() % ns), (double)(r.next() % 100000) / 100}; }
+  int64_t tmax = t; t = 0;
+  for (auto& e : tr) { t += 1 + r.next() % (2 * tmax / nt + 1); e = {std::min(t, tmax), (uint32_t)(r.next() % ns), 0}; }
+
