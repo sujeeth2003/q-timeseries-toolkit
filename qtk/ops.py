@@ -63,3 +63,17 @@ def bars_naive(sym, time, price, size, bucket):
     return {k: (a[0], a[1], a[2], a[3], a[4] / a[5], a[5]) for k, a in acc.items()}
 
 
+def bars_numpy(sym, time, price, size, bucket):
+    """Sort by (sym, bar) once (stable, so time order is kept inside a bar), then segment reductions with reduceat/bincount."""
+    bar = time // bucket * bucket
+    order = np.lexsort((bar, sym))                      # primary key sym, then bar; stable
+    s, b, p, z = sym[order], bar[order], price[order], size[order]
+    new = np.r_[True, (s[1:] != s[:-1]) | (b[1:] != b[:-1])]
+    starts = np.flatnonzero(new)
+    ends = np.r_[starts[1:], len(s)] - 1
+    seg = np.cumsum(new) - 1
+    vol = np.bincount(seg, z); pv = np.bincount(seg, p * z)
+    hi, lo = np.maximum.reduceat(p, starts), np.minimum.reduceat(p, starts)      # once per column, not once per bar
+    o, c, vw = p[starts], p[ends], pv / vol
+    return {(int(s[a]), int(b[a])): (o[k], hi[k], lo[k], c[k], vw[k], vol[k]) for k, a in enumerate(starts)}
+
