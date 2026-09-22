@@ -37,3 +37,18 @@ def aj_sorted(t_sym, t_time, q_sym, q_time, q_val):
             if k >= 0: out[i] = vals[k]
     return out
 
+
+def aj_numpy(t_sym, t_time, q_sym, q_time, q_val):
+    """Fully vectorised: fold the symbol into the sort key (sym * SPAN + time) so ONE np.searchsorted answers every lookup.
+    A hit only counts if it landed on a quote of the same symbol."""
+    span = int(max(q_time.max(), t_time.max())) + 1
+    qkey = q_sym.astype(np.int64) * span + q_time
+    order = np.argsort(qkey, kind="stable")
+    qkey, qs, qv = qkey[order], q_sym[order], q_val[order]
+    idx = np.searchsorted(qkey, t_sym.astype(np.int64) * span + t_time, side="right") - 1
+    ok = (idx >= 0) & (qs[np.maximum(idx, 0)] == t_sym)
+    return np.where(ok, qv[np.maximum(idx, 0)], np.nan)
+
+
+# ------------------------------------------------------------------------------- xbar + OHLC + VWAP
+# q:  select o:first price, h:max price, l:min price, c:last price, vwap:size wavg price by sym, bar:xbar[bucket;time] from trades
