@@ -77,3 +77,15 @@ def bars_numpy(sym, time, price, size, bucket):
     o, c, vw = p[starts], p[ends], pv / vol
     return {(int(s[a]), int(b[a])): (o[k], hi[k], lo[k], c[k], vw[k], vol[k]) for k, a in enumerate(starts)}
 
+
+# ------------------------------------------------------------------------------- mavg
+# q:  mavg[w; price]   (q averages over the samples available at the start, like the growing-window version here)
+def mavg_naive(x, w):
+    """O(n*w): re-sum the window at every step."""
+    out = np.empty(len(x))
+    for i in range(len(x)):
+        lo = max(0, i - w + 1)
+        out[i] = sum(x[lo:i + 1]) / (i + 1 - lo)
+    return out
+
+
