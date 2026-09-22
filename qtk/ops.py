@@ -12,3 +12,14 @@ import numpy as np
 
 # ------------------------------------------------------------------------------- aj: as-of join
 # q:   aj[`sym`time; trades; quotes]   -> for each trade, the LAST quote with the same sym and quote.time <= trade.time
+def aj_naive(t_sym, t_time, q_sym, q_time, q_val):
+    """O(trades x quotes): scan every quote for every trade."""
+    out = np.full(len(t_time), np.nan)
+    for i in range(len(t_time)):
+        best_t = -1
+        for j in range(len(q_time)):
+            if q_sym[j] == t_sym[i] and q_time[j] <= t_time[i] and q_time[j] >= best_t:
+                best_t, out[i] = q_time[j], q_val[j]
+    return out
+
+
