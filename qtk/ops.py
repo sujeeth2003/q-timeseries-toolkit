@@ -89,3 +89,13 @@ def mavg_naive(x, w):
     return out
 
 
+def mavg_cumsum(x, w):
+    """O(n): running sum via cumulative sums; window sum = c[i] - c[i-w]."""
+    c = np.cumsum(x, dtype=np.float64)
+    n = np.arange(1, len(x) + 1)
+    win = np.minimum(n, w)
+    s = c.copy(); s[w:] -= c[:-w]
+    return s / win
+
+
+# ------------------------------------------------------------------------------- row store vs column store
