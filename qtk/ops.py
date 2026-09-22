@@ -23,3 +23,17 @@ def aj_naive(t_sym, t_time, q_sym, q_time, q_val):
     return out
 
 
+def aj_sorted(t_sym, t_time, q_sym, q_time, q_val):
+    """Group quotes per symbol once (sorted by time), then binary-search each trade: O(n log m)."""
+    from bisect import bisect_right
+    by_sym = {}
+    for s, t, v in zip(q_sym, q_time, q_val):
+        by_sym.setdefault(s, ([], []))[0].append(t); by_sym[s][1].append(v)
+    out = np.full(len(t_time), np.nan)
+    for i, (s, t) in enumerate(zip(t_sym, t_time)):
+        if s in by_sym:
+            times, vals = by_sym[s]
+            k = bisect_right(times, t) - 1
+            if k >= 0: out[i] = vals[k]
+    return out
+
