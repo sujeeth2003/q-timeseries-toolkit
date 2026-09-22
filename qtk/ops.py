@@ -52,3 +52,14 @@ def aj_numpy(t_sym, t_time, q_sym, q_time, q_val):
 
 # ------------------------------------------------------------------------------- xbar + OHLC + VWAP
 # q:  select o:first price, h:max price, l:min price, c:last price, vwap:size wavg price by sym, bar:xbar[bucket;time] from trades
+def bars_naive(sym, time, price, size, bucket):
+    """dict of lists, Python loop. Returns {(sym, bar): (open, high, low, close, vwap, volume)} for trades in time order."""
+    acc = {}
+    for s, t, p, z in zip(sym, time, price, size):
+        k = (int(s), int(t // bucket * bucket))
+        if k not in acc: acc[k] = [p, p, p, p, p * z, z]
+        else:
+            a = acc[k]; a[1] = max(a[1], p); a[2] = min(a[2], p); a[3] = p; a[4] += p * z; a[5] += z
+    return {k: (a[0], a[1], a[2], a[3], a[4] / a[5], a[5]) for k, a in acc.items()}
+
+
