@@ -99,3 +99,11 @@ def mavg_cumsum(x, w):
 
 
 # ------------------------------------------------------------------------------- row store vs column store
+def sum_rowstore(rows):
+    """rows: list of dicts (how you would model a table in plain Python)."""
+    return sum(r["price"] for r in rows)
+
+
+def sum_colstore(price_col):
+    """One contiguous float64 array: a single sequential, SIMD-friendly pass."""
+    return price_col.sum()
