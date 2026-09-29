@@ -29,3 +29,17 @@ int main(int argc, char** argv) {
   int64_t tmax = t; t = 0;
   for (auto& e : tr) { t += 1 + r.next() % (2 * tmax / nt + 1); e = {std::min(t, tmax), (uint32_t)(r.next() % ns), 0}; }
 
+  // ---- variant 1: binary search on composite key ---------------------------------------------
+  auto t0 = clk::now();
+  std::vector<uint64_t> key(nq); std::vector<double> val(nq);
+  { std::vector<size_t> ord(nq); for (size_t i = 0; i < nq; ++i) ord[i] = i;
+    std::stable_sort(ord.begin(), ord.end(), [&](size_t a, size_t b) { return q[a].sym != q[b].sym ? q[a].sym < q[b].sym : q[a].t < q[b].t; });
+    for (size_t i = 0; i < nq; ++i) { key[i] = (uint64_t)q[ord[i]].sym << 40 | (uint64_t)q[ord[i]].t; val[i] = q[ord[i]].v; } }
+  std::vector<double> res1(nt);
+  for (size_t i = 0; i < nt; ++i) {
+    uint64_t k = (uint64_t)tr[i].sym << 40 | (uint64_t)tr[i].t;
+    size_t j = std::upper_bound(key.begin(), key.end(), k) - key.begin();
+    res1[i] = (j > 0 && (key[j - 1] >> 40) == tr[i].sym) ? val[j - 1] : -1;
+  }
+  double d1 = ms_since(t0);
+
