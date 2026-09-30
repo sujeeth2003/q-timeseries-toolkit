@@ -15,3 +15,21 @@ def data(nt, nq, ns, seed):
     return t_sym, t_time, q_sym, q_time, q_val
 
 
+class OpsTests(unittest.TestCase):
+    def test_aj_variants_agree_including_ties_and_misses(self):
+        for seed in range(6):
+            d = data(120, 400, 8, seed)
+            a, b, c = ops.aj_naive(*d), ops.aj_sorted(*d), ops.aj_numpy(*d)
+            for x, y in ((a, b), (a, c)):
+                np.testing.assert_allclose(np.nan_to_num(x, nan=-1), np.nan_to_num(y, nan=-1))
+
+    def test_aj_known_answer(self):
+        # quotes: sym0 @t10=1.0, sym0 @t20=2.0, sym1 @t15=9.0 ; trades: sym0@t19, sym0@t20 (equal time counts), sym0@t5 (none), sym1@t14 (none)
+        r = ops.aj_numpy(np.array([0, 0, 0, 1]), np.array([19, 20, 5, 14]), np.array([0, 0, 1]), np.array([10, 20, 15]), np.array([1.0, 2.0, 9.0]))
+        np.testing.assert_allclose(r[:2], [1.0, 2.0]); self.assertTrue(np.isnan(r[2]) and np.isnan(r[3]))
+
+    def test_mavg_variants_agree_and_growing_window(self):
+        x = np.random.default_rng(0).random(500)
+        np.testing.assert_allclose(ops.mavg_naive(x, 20), ops.mavg_cumsum(x, 20))
+        self.assertAlmostEqual(ops.mavg_cumsum(np.array([2., 4., 6.]), 5)[2], 4.0)     # fewer than w samples: average what exists
+
