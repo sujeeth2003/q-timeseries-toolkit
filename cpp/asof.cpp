@@ -43,3 +43,19 @@ int main(int argc, char** argv) {
   }
   double d1 = ms_since(t0);
 
+  // ---- variant 2: one merge pass, latest quote per symbol -------------------------------------
+  t0 = clk::now();
+  std::vector<double> last(ns, -1), res2(nt);
+  size_t qi = 0;
+  for (size_t i = 0; i < nt; ++i) {
+    while (qi < nq && q[qi].t <= tr[i].t) { last[q[qi].sym] = q[qi].v; ++qi; }
+    res2[i] = last[tr[i].sym];
+  }
+  double d2 = ms_since(t0);
+
+  size_t bad = 0; for (size_t i = 0; i < nt; ++i) bad += res1[i] != res2[i];
+  std::printf("%zu trades x %zu quotes, %u symbols\n", nt, nq, ns);
+  std::printf("aj binary search (incl. sort) : %8.1f ms  %6.1f ns/trade\n", d1, d1 * 1e6 / nt);
+  std::printf("aj merge pass                 : %8.1f ms  %6.1f ns/trade   (%.1fx faster)\n", d2, d2 * 1e6 / nt, d1 / d2);
+  std::printf("results identical: %s\n", bad ? "NO" : "yes");
+
