@@ -40,3 +40,19 @@ def main():
     x = np.random.default_rng(1).random(5_000_000); tc, _ = timed(ops.mavg_cumsum, x, 20, repeat=3)
     print(f"  5M rows     : cumsum {tc * 1e3:7.1f} ms")
 
+    print("== OHLC/VWAP bars by (sym, xbar) ==")
+    rng = np.random.default_rng(2); n = 200_000
+    sym = rng.integers(0, 50, n); time_ = np.sort(rng.integers(0, 3_600_000, n)); price = 100 + rng.normal(0, 1, n).cumsum() / 50; size = rng.integers(1, 500, n)
+    tn, a = timed(ops.bars_naive, sym, time_, price, size, 60_000)
+    tp, b = timed(ops.bars_numpy, sym, time_, price, size, 60_000, repeat=3)
+    assert a.keys() == b.keys() and all(np.allclose(a[k], b[k]) for k in a)
+    print(f"  200,000 trades: dict loop {tn * 1e3:7.0f} ms | numpy segments {tp * 1e3:6.0f} ms   ({tn / tp:.1f}x)")
+
+    print("== row store vs column store: sum(price) ==")
+    n = 2_000_000; col = np.random.default_rng(3).random(n); rows = [{"price": v, "size": 1, "sym": "A"} for v in col[:500_000]]
+    tr, _ = timed(ops.sum_rowstore, rows, repeat=3); tc, _ = timed(ops.sum_colstore, col[:500_000], repeat=20)
+    print(f"  500,000 rows: list of dicts {tr * 1e3:6.1f} ms | one float64 column {tc * 1e3:6.3f} ms   ({tr / tc:,.0f}x)")
+
+
+if __name__ == "__main__":
+    main()
