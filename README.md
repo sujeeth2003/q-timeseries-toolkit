@@ -25,3 +25,10 @@ C++ (2M trades x 4M quotes, 500 symbols):
        mavg(20) running sum 2.1 ns/row
 ```
 
+## What I learned
+1. **Exploit sorted order.** The as-of join is a merge of two time-sorted streams. Scanning is O(n x m); binary search is O(n log m); one merge pass with a "latest quote per symbol" table is **O(n + m) with sequential memory access**, which is why the C++ merge is 38x faster than binary search even though both are "fast" algorithms on paper: the search jumps around 4M keys (cache misses), the merge streams through memory.
+2. **Fold the grouping into the key.** Doing the join per symbol needs a Python loop over symbols. Encoding `sym * SPAN + time` into one sortable integer lets a single `searchsorted` do every symbol at once, which is the vectorised trick q's `aj` gets from its attributes.
+3. **Columnar layout is the foundation.** A column of floats is one contiguous array: summing it is a sequential, SIMD-friendly pass (243x faster than a list of dicts, whose values are scattered boxed objects).
+4. **Watch for hidden quadratic work.** My first vectorised OHLC was *slower* than the loop (0.3x): I recomputed `reduceat` inside a per-bar loop, turning O(n) into O(bars x n). Hoisting it out made it 7.6x *faster*. Vectorising is not automatically fast; where the loop sits matters.
+5. **Sliding windows: don't re-sum.** `mavg` by re-summing is O(n x w); a running sum is O(n) at ~2 ns/row.
+
