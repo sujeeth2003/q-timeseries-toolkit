@@ -33,3 +33,19 @@ class OpsTests(unittest.TestCase):
         np.testing.assert_allclose(ops.mavg_naive(x, 20), ops.mavg_cumsum(x, 20))
         self.assertAlmostEqual(ops.mavg_cumsum(np.array([2., 4., 6.]), 5)[2], 4.0)     # fewer than w samples: average what exists
 
+    def test_bars_variants_agree_and_ohlc_semantics(self):
+        rng = np.random.default_rng(1); n = 5000
+        sym = rng.integers(0, 6, n); t = np.sort(rng.integers(0, 100_000, n)); p = 50 + rng.normal(0, 1, n); z = rng.integers(1, 100, n)
+        a, b = ops.bars_naive(sym, t, p, z, 5000), ops.bars_numpy(sym, t, p, z, 5000)
+        self.assertEqual(a.keys(), b.keys())
+        for k in a: np.testing.assert_allclose(a[k], b[k])
+        o, h, l, c, vwap, vol = a[next(iter(a))]
+        self.assertTrue(l <= o <= h and l <= c <= h and l <= vwap <= h)
+
+    def test_row_and_column_sums_agree(self):
+        col = np.random.default_rng(2).random(1000)
+        self.assertAlmostEqual(ops.sum_rowstore([{"price": v} for v in col]), ops.sum_colstore(col))
+
+
+if __name__ == "__main__":
+    unittest.main()
