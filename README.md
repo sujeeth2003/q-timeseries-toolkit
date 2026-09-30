@@ -12,3 +12,16 @@ I used kdb+/q to understand *why* time-series databases are fast, then rebuilt i
 | `mavg[w; x]` | moving average | re-sum each window vs cumulative sums vs running sum in C++ |
 | columnar tables | why a column is one contiguous array | list-of-dicts vs a `float64` array |
 
+## Results (this Windows laptop, single runs)
+```
+aj:    300 trades x 3,000 quotes : naive 131.5 ms | sorted+bisect 1.19 ms | numpy 0.102 ms   (1,288x vs naive)
+       1M trades x 2M quotes     : numpy 278 ms  (278 ns/trade)
+mavg:  20,000 rows : naive 41.1 ms | cumsum 0.277 ms  (148x);   5M rows: cumsum 80 ms
+bars:  200,000 trades: dict loop 148 ms | numpy segments 19 ms   (7.6x)
+rows vs columns: sum of 500,000 prices: list of dicts 37.5 ms | float64 column 0.154 ms   (243x)
+
+C++ (2M trades x 4M quotes, 500 symbols):
+       aj binary search (incl. sort) 425 ns/trade | aj merge pass 11.3 ns/trade  (37.7x)   results identical
+       mavg(20) running sum 2.1 ns/row
+```
+
