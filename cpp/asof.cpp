@@ -59,3 +59,11 @@ int main(int argc, char** argv) {
   std::printf("aj merge pass                 : %8.1f ms  %6.1f ns/trade   (%.1fx faster)\n", d2, d2 * 1e6 / nt, d1 / d2);
   std::printf("results identical: %s\n", bad ? "NO" : "yes");
 
+  // ---- moving average, running-sum form ---------------------------------------------------------
+  std::vector<double> x(nq), m(nq); for (size_t i = 0; i < nq; ++i) x[i] = q[i].v;
+  const size_t w = 20;
+  t0 = clk::now();
+  double s = 0; for (size_t i = 0; i < nq; ++i) { s += x[i]; if (i >= w) s -= x[i - w]; m[i] = s / std::min(i + 1, w); }
+  double d3 = ms_since(t0);
+  std::printf("mavg(20) running sum          : %8.1f ms  %6.2f ns/row   (checksum %.3f)\n", d3, d3 * 1e6 / nq, m[nq - 1]);
+}
