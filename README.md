@@ -32,3 +32,13 @@ C++ (2M trades x 4M quotes, 500 symbols):
 4. **Watch for hidden quadratic work.** My first vectorised OHLC was *slower* than the loop (0.3x): I recomputed `reduceat` inside a per-bar loop, turning O(n) into O(bars x n). Hoisting it out made it 7.6x *faster*. Vectorising is not automatically fast; where the loop sits matters.
 5. **Sliding windows: don't re-sum.** `mavg` by re-summing is O(n x w); a running sum is O(n) at ~2 ns/row.
 
+## Run
+```bash
+pip install numpy
+python -m unittest discover -s tests          # 5 tests: all variants agree (incl. ties, misses, equal timestamps), OHLC semantics
+python bench.py
+g++ -O2 -std=c++17 cpp/asof.cpp -o asof && ./asof [trades] [quotes] [symbols]
+```
+
+## Not covered
+Real q/kdb+ features such as splayed/partitioned on-disk tables, attributes (`` `s# ``, `` `g# ``), IPC, and q-SQL are not reproduced. This is about the algorithms, not a database. A cross-check against real kdb+ output would be the next step once a licence/free-tier `q` is available.
